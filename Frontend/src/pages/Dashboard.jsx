@@ -15,7 +15,10 @@ import {
   Lock,
   Menu,
   X,
+  Smile,
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import EmojiPicker from '../components/EmojiPicker.jsx';
 import { logoutUser, checkAuth, updateUserProfile } from '../services/authService.js';
 import {
   fetchConversations,
@@ -232,6 +235,7 @@ const Dashboard = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
   const [activeWallpaper, setActiveWallpaper] = useState('default');
   const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => {
@@ -344,6 +348,8 @@ const Dashboard = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const activeConversationIdRef = useRef(activeConversationId);
+  const textareaRef = useRef(null);
+  const emojiButtonRef = useRef(null);
 
   // Keep activeConversationIdRef updated for socket closures
   useEffect(() => {
@@ -470,6 +476,7 @@ const Dashboard = () => {
 
     const textToSend = messageText.trim();
     setMessageText('');
+    setShowEmojiPicker(false);
 
     // Stop typing indicator immediately
     handleTyping(false);
@@ -483,6 +490,45 @@ const Dashboard = () => {
     } catch (err) {
       alert('Message encryption/dispatch failed: ' + err.message);
     }
+  };
+
+  // Handle Emoji Selection
+  const handleEmojiSelect = (emoji) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setMessageText((prev) => prev + emoji);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = messageText.substring(0, start);
+    const after = messageText.substring(end);
+    const newText = before + emoji + after;
+
+    setMessageText(newText);
+
+    // Play rustic keyboard typing click sound
+    playKeyboardClickSound();
+
+    if (!isTyping) {
+      handleTyping(true);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      handleTyping(false);
+    }, 2000);
+
+    // Maintain focus and set cursor right after inserted emoji
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + emoji.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
   };
 
   // Handle Typing indicator triggers
@@ -1019,8 +1065,18 @@ const Dashboard = () => {
               {/* Message Composer - Monospace Input Font Applied */}
               <div className="p-4 border-t border-outline-variant/30 bg-surface/40 backdrop-blur-md relative z-20">
                 <form onSubmit={handleSendMessage} className="flex items-end space-x-3 max-w-7xl mx-auto">
-                  <div className="flex-1 bg-surface-container-highest/60 border border-outline-variant/50 rounded-xl px-4 py-3 flex items-center focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all duration-200">
+                  <div className="flex-1 bg-surface-container-highest/60 border border-outline-variant/50 rounded-xl px-4 py-3 flex items-center focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all duration-200 relative">
+                    <button
+                      ref={emojiButtonRef}
+                      type="button"
+                      onClick={() => setShowEmojiPicker((prev) => !prev)}
+                      className="mr-3 text-on-surface-variant/50 hover:text-primary hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center flex-shrink-0"
+                      title="Emoji Tray"
+                    >
+                      <Smile className="h-4.5 w-4.5" />
+                    </button>
                     <textarea
+                      ref={textareaRef}
                       placeholder="Type a secure message..."
                       value={messageText}
                       onChange={handleInputChange}
@@ -1033,6 +1089,15 @@ const Dashboard = () => {
                         }
                       }}
                     />
+                    <AnimatePresence>
+                      {showEmojiPicker && (
+                        <EmojiPicker
+                          onSelect={handleEmojiSelect}
+                          onClose={() => setShowEmojiPicker(false)}
+                          triggerRef={emojiButtonRef}
+                        />
+                      )}
+                    </AnimatePresence>
                   </div>
                   <button
                     type="submit"

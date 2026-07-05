@@ -54,7 +54,7 @@ const decryptPrivateKey = (backup, userId) => {
  * Generates Kyber keypair, encrypts and stores the private key backup,
  * returns tokens + the plaintext private key for client-side storage.
  */
-export const register = async ({ username, email, password }) => {
+export const register = async ({ username, email, password, dob }) => {
   const existingUser = await User.findOne({ $or: [{ email }, { username }] });
   if (existingUser) {
     throw new AppError('User with this email or username already exists', 409);
@@ -68,6 +68,7 @@ export const register = async ({ username, email, password }) => {
     username,
     email,
     password,
+    dob,
     kyberPublicKey: publicKey,
   });
 

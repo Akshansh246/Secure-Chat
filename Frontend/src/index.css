@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Default: Light Mode (Google Stitch Vybrix Light design theme) */
   --color-primary: #0a1628;

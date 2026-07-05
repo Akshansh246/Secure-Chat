@@ -22,6 +22,9 @@ const messageSchema = new mongoose.Schema(
 // Compound index for paginated message fetching
 messageSchema.index({ conversationId: 1, createdAt: -1 });
 
+// Automatically delete messages after 24 hours (86400 seconds)
+messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
+
 const Message = mongoose.model('Message', messageSchema);
 
 export default Message;

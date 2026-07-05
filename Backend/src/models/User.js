@@ -39,6 +39,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    dob: {
+      type: Date,
+      default: null,
+    },
+    bio: {
+      type: String,
+      default: 'Hey there! I am using SecureChat.',
+      maxlength: [160, 'Bio cannot exceed 160 characters'],
+    },
     lastSeen: {
       type: Date,
       default: Date.now,

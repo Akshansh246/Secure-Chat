@@ -11,6 +11,7 @@ const SignUp = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dob, setDob] = useState('');
   const [localError, setLocalError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -36,7 +37,7 @@ const SignUp = () => {
     e.preventDefault();
     setLocalError('');
 
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !dob) {
       setLocalError('All fields are required');
       return;
     }
@@ -52,7 +53,7 @@ const SignUp = () => {
     }
 
     try {
-      await dispatch(registerUser({ username, email, password }));
+      await dispatch(registerUser({ username, email, password, dob }));
     } catch (err) {
       // Errors handled by Redux auth.error
     }
@@ -159,6 +160,26 @@ const SignUp = () => {
                   disabled={loading}
                   required
                   autoComplete="email"
+                />
+              </div>
+            </div>
+
+            {/* Date of Birth Input */}
+            <div className="space-y-2">
+              <label className="font-code text-[11px] text-on-surface-variant flex items-center gap-2 uppercase tracking-widest" htmlFor="dob">
+                <span className="material-symbols-outlined text-[14px] text-primary/70">cake</span>
+                Date of Birth
+              </label>
+              <div className="relative group border-b border-outline-variant/50 focus-within:border-primary focus-within:shadow-[0_1px_0_0_#2ff3ad] transition-all bg-surface-container-lowest/80 rounded-t-lg">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors">calendar_month</span>
+                <input
+                  id="dob"
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="w-full bg-transparent border-none text-on-surface font-code text-xs pl-10 pr-4 py-3 focus:outline-none focus:ring-0 placeholder:text-outline-variant/30"
+                  disabled={loading}
+                  required
                 />
               </div>
             </div>

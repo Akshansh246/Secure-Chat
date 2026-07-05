@@ -1,5 +1,5 @@
 import api from './api.js';
-import { setCredentials, logOut, setError, setLoading } from '../store/slices/authSlice.js';
+import { setCredentials, logOut, setError, setLoading, updateUser } from '../store/slices/authSlice.js';
 import { clearChat } from '../store/slices/chatSlice.js';
 
 export const registerUser = (userData) => async (dispatch) => {
@@ -75,5 +75,21 @@ export const checkAuth = () => async (dispatch) => {
     // If getting profile fails (e.g. token expired and couldn't refresh), logout
     dispatch(logOut());
     dispatch(clearChat());
+  }
+};
+
+export const updateUserProfile = (profileData) => async (dispatch) => {
+  dispatch(setLoading(true));
+  try {
+    const response = await api.patch('/users/me', profileData);
+    const { user } = response.data.data;
+    dispatch(updateUser(user));
+    return user;
+  } catch (error) {
+    const message = error.response?.data?.message || 'Failed to update profile';
+    dispatch(setError(message));
+    throw new Error(message);
+  } finally {
+    dispatch(setLoading(false));
   }
 };

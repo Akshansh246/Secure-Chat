@@ -7,6 +7,7 @@ const router = Router();
 router.use(protect);
 
 router.get('/me', userController.getMe);
+router.patch('/me', userController.updateMe);
 router.get('/search', userController.searchUsers);
 
 export default router;

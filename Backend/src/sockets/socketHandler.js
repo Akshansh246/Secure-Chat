@@ -115,6 +115,18 @@ const initializeSocket = (io) => {
       }
     });
 
+    socket.on('screenshot:taken', (data) => {
+      const { recipientId, conversationId } = data;
+      const recipientSockets = getRecipientSocketIds(recipientId);
+
+      for (const socketId of recipientSockets) {
+        io.to(socketId).emit('screenshot:taken', {
+          userId,
+          conversationId,
+        });
+      }
+    });
+
     // --- E2EE Peer Key Sync Relay ---
 
     socket.on('key:request', (data) => {

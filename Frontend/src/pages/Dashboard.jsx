@@ -16,7 +16,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { logoutUser, checkAuth } from '../services/authService.js';
+import { logoutUser, checkAuth, updateUserProfile } from '../services/authService.js';
 import {
   fetchConversations,
   startConversation,
@@ -31,9 +31,177 @@ import {
   emitMessageSeen,
   emitMessageSend,
   getSocket,
+  emitScreenshotTaken,
 } from '../services/socketService.js';
-import { setActiveConversationId, clearUnread, updateLastReadTimestamp } from '../store/slices/chatSlice.js';
+import { setActiveConversationId, clearUnread, updateLastReadTimestamp, addMessage } from '../store/slices/chatSlice.js';
 import logo from '../assets/logo.svg';
+
+// WhatsApp-style Profile panel
+import LineWaves from '../components/LineWaves.jsx';
+
+const UserProfilePanel = ({ currentUser, onClose, dispatch }) => {
+  const [editingBio, setEditingBio] = useState(false);
+  const [tempBio, setTempBio] = useState(currentUser?.bio || 'Hey there! I am using SecureChat.');
+  const [editingDob, setEditingDob] = useState(false);
+  const [tempDob, setTempDob] = useState(currentUser?.dob ? new Date(currentUser.dob).toISOString().split('T')[0] : '');
+
+  const handleSaveBio = async () => {
+    try {
+      await dispatch(updateUserProfile({ bio: tempBio }));
+      setEditingBio(false);
+    } catch (err) {
+      alert(err.message || 'Failed to update bio');
+    }
+  };
+
+  const handleSaveDob = async () => {
+    try {
+      await dispatch(updateUserProfile({ dob: tempDob }));
+      setEditingDob(false);
+    } catch (err) {
+      alert(err.message || 'Failed to update DOB');
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        await dispatch(updateUserProfile({ profileImage: reader.result }));
+      } catch (err) {
+        alert(err.message || 'Failed to upload photo');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-surface">
+      {/* Header */}
+      <div className="p-4 border-b border-outline-variant/30 bg-surface-container-low/20 flex items-center gap-4 flex-shrink-0">
+        <button 
+          onClick={onClose}
+          className="p-1 hover:bg-surface-container-high rounded-full text-on-surface-variant hover:text-primary transition-colors cursor-pointer flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        </button>
+        <span className="font-headline font-bold text-sm text-on-surface">Profile</span>
+      </div>
+
+      {/* Profile Details */}
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-6">
+        {/* Avatar Section */}
+        <div className="relative group cursor-pointer w-28 h-28 rounded-full overflow-hidden border border-outline-variant/50 flex items-center justify-center bg-surface-container-high shadow-inner">
+          {currentUser?.profileImage ? (
+            <img src={currentUser.profileImage} alt="Profile Photo" className="w-full h-full object-cover" />
+          ) : (
+            <div className="font-code font-bold text-3xl text-primary uppercase">
+              {currentUser?.username?.substring(0, 2)}
+            </div>
+          )}
+          {/* Hover overlay to change picture */}
+          <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-center text-[10px] text-white font-code gap-1 cursor-pointer transition-opacity">
+            <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+            <span>CHANGE PHOTO</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+          </label>
+        </div>
+
+        <div className="w-full space-y-5">
+          {/* Username display */}
+          <div className="space-y-1.5 pb-3.5 border-b border-outline-variant/20">
+            <div className="text-[10px] text-on-surface-variant/50 font-code font-bold uppercase tracking-wider">Username</div>
+            <div className="text-xs font-headline text-on-surface font-semibold">{currentUser?.username}</div>
+          </div>
+
+          {/* Email display */}
+          <div className="space-y-1.5 pb-3.5 border-b border-outline-variant/20">
+            <div className="text-[10px] text-on-surface-variant/50 font-code font-bold uppercase tracking-wider">Email Address</div>
+            <div className="text-xs font-code text-on-surface-variant">{currentUser?.email}</div>
+          </div>
+
+          {/* Date of Birth */}
+          <div className="space-y-1.5 pb-3.5 border-b border-outline-variant/20">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] text-on-surface-variant/50 font-code font-bold uppercase tracking-wider">Date of Birth</div>
+              <button 
+                onClick={() => setEditingDob(!editingDob)}
+                className="text-primary hover:text-primary-dim text-[10px] font-code cursor-pointer"
+              >
+                {editingDob ? "Cancel" : "Edit"}
+              </button>
+            </div>
+            {editingDob ? (
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="date"
+                  value={tempDob}
+                  onChange={(e) => setTempDob(e.target.value)}
+                  className="flex-1 bg-surface-container-highest border border-outline-variant/50 rounded-lg p-2 font-code text-xs text-on-surface focus:outline-none focus:border-primary"
+                />
+                <button 
+                  onClick={handleSaveDob}
+                  className="bg-primary text-surface-container-lowest font-code text-[11px] px-3 py-2 rounded-lg hover:bg-primary-container cursor-pointer"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs font-code text-on-surface">
+                {currentUser?.dob ? new Date(currentUser.dob).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not set'}
+              </div>
+            )}
+          </div>
+
+          {/* Bio Section */}
+          <div className="space-y-1.5 pb-3.5 border-b border-outline-variant/20">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] text-on-surface-variant/50 font-code font-bold uppercase tracking-wider">About / Bio</div>
+              <button 
+                onClick={() => setEditingBio(!editingBio)}
+                className="text-primary hover:text-primary-dim text-[10px] font-code cursor-pointer"
+              >
+                {editingBio ? "Cancel" : "Edit"}
+              </button>
+            </div>
+            {editingBio ? (
+              <div className="flex flex-col gap-2 mt-1">
+                <textarea
+                  rows={2}
+                  value={tempBio}
+                  onChange={(e) => setTempBio(e.target.value)}
+                  maxLength={160}
+                  className="w-full bg-surface-container-highest border border-outline-variant/50 rounded-lg p-2 font-code text-xs text-on-surface focus:outline-none focus:border-primary"
+                  placeholder="Tell us about yourself..."
+                />
+                <div className="flex justify-end gap-2">
+                  <button 
+                    onClick={handleSaveBio}
+                    className="bg-primary text-surface-container-lowest font-code text-[11px] px-3 py-2 rounded-lg hover:bg-primary-container cursor-pointer"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs font-sans text-on-surface leading-relaxed italic">
+                "{currentUser?.bio || 'Hey there! I am using SecureChat.'}"
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -58,6 +226,7 @@ const Dashboard = () => {
   const [messageText, setMessageText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   // Theme & Wallpaper states
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
@@ -76,68 +245,72 @@ const Dashboard = () => {
     });
   };
 
+  const audioCtxRef = useRef(null);
+  const keystrokeBuffersRef = useRef([]);
+
+  useEffect(() => {
+    const initAudio = async () => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        
+        const ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+        
+        const soundUrls = [
+          '/sounds/keystroke1.mp3',
+          '/sounds/keystroke2.mp3',
+          '/sounds/keystroke3.mp3',
+          '/sounds/keystroke4.mp3'
+        ];
+        
+        const buffers = await Promise.all(
+          soundUrls.map(async (url) => {
+            const res = await fetch(url);
+            const arrayBuf = await res.arrayBuffer();
+            return new Promise((resolve, reject) => {
+              ctx.decodeAudioData(arrayBuf, resolve, reject);
+            });
+          })
+        );
+        
+        keystrokeBuffersRef.current = buffers;
+        console.log('🔊 Pre-loaded 4 keystroke audio buffers successfully');
+      } catch (err) {
+        console.error('Failed to pre-load keystroke sounds:', err);
+      }
+    };
+    
+    initAudio();
+    
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close();
+      }
+    };
+  }, []);
+
   const playKeyboardClickSound = () => {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
+      const ctx = audioCtxRef.current;
+      const buffers = keystrokeBuffersRef.current;
+      if (!ctx || buffers.length === 0) return;
 
-      // Sound 1: High frequency mechanical contact click (metallic pop)
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(1600, ctx.currentTime);
-      osc1.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.03);
-      
-      gain1.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain1.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.03);
-      
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start();
-      osc1.stop(ctx.currentTime + 0.035);
-
-      // Sound 2: Heavy physical wood-block/keycap "thock" resonance
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(220, ctx.currentTime);
-      osc2.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.05);
-      
-      gain2.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
-      
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start();
-      osc2.stop(ctx.currentTime + 0.055);
-
-      // Sound 3: Key friction noise burst (the realistic slider friction sound)
-      const bufferSize = ctx.sampleRate * 0.02; // 20ms of noise
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
       }
+
+      const randomIndex = Math.floor(Math.random() * buffers.length);
+      const buffer = buffers[randomIndex];
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
       
-      const noiseNode = ctx.createBufferSource();
-      noiseNode.buffer = buffer;
-      
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'bandpass';
-      noiseFilter.frequency.setValueAtTime(1000, ctx.currentTime);
-      noiseFilter.Q.setValueAtTime(1.5, ctx.currentTime);
-      
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.03, ctx.currentTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.02);
-      
-      noiseNode.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      
-      noiseNode.start();
-      noiseNode.stop(ctx.currentTime + 0.025);
+      // Slight pitch variance for organic keyboard sound feel
+      source.playbackRate.value = 0.95 + Math.random() * 0.1;
+
+      source.connect(ctx.destination);
+      source.start(0);
     } catch (e) {
       // Mute audio play blockages
     }
@@ -147,23 +320,23 @@ const Dashboard = () => {
     default: {},
     quantum: {
       backgroundImage: isDarkMode 
-        ? 'radial-gradient(circle at 50% 50%, rgba(47, 243, 173, 0.08), #09090b)'
-        : 'radial-gradient(circle at 50% 50%, rgba(10, 22, 40, 0.06), #ffffff)'
+        ? 'radial-gradient(circle at 20% 30%, rgba(47, 243, 173, 0.15) 0%, rgba(143, 96, 250, 0.05) 50%, #060608 100%)'
+        : 'radial-gradient(circle at 20% 30%, rgba(193, 209, 253, 0.55) 0%, rgba(243, 232, 255, 0.55) 50%, #f7fafd 100%)'
     },
     cyber: {
       backgroundImage: isDarkMode
-        ? 'linear-gradient(135deg, rgba(143, 96, 250, 0.08) 0%, rgba(47, 243, 173, 0.08) 100%)'
-        : 'linear-gradient(135deg, rgba(193, 209, 253, 0.3) 0%, rgba(247, 250, 253, 0.9) 100%)'
+        ? 'linear-gradient(135deg, rgba(255, 0, 128, 0.12) 0%, rgba(47, 243, 173, 0.12) 50%, rgba(0, 153, 255, 0.12) 100%)'
+        : 'linear-gradient(135deg, rgba(255, 230, 242, 0.8) 0%, rgba(230, 255, 245, 0.8) 50%, rgba(230, 247, 255, 0.8) 100%)'
     },
     aurora: {
       backgroundImage: isDarkMode
-        ? 'radial-gradient(circle at top right, rgba(47, 243, 173, 0.08), transparent 60%), radial-gradient(circle at bottom left, rgba(143, 96, 250, 0.08), transparent 60%)'
-        : 'radial-gradient(circle at top right, rgba(0, 229, 160, 0.1), transparent 60%), radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.1), transparent 60%)'
+        ? 'radial-gradient(circle at 80% 20%, rgba(143, 96, 250, 0.15), transparent 50%), radial-gradient(circle at 20% 80%, rgba(0, 240, 255, 0.15), transparent 50%)'
+        : 'radial-gradient(circle at 80% 20%, rgba(235, 224, 255, 0.9), transparent 60%), radial-gradient(circle at 20% 80%, rgba(224, 249, 255, 0.9), transparent 60%)'
     },
     matrix: {
       backgroundImage: isDarkMode
-        ? 'repeating-linear-gradient(0deg, rgba(47, 243, 173, 0.02) 0px, rgba(47, 243, 173, 0.02) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(47, 243, 173, 0.02) 0px, rgba(47, 243, 173, 0.02) 1px, transparent 1px, transparent 20px)'
-        : 'repeating-linear-gradient(0deg, rgba(10, 22, 40, 0.02) 0px, rgba(10, 22, 40, 0.02) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(10, 22, 40, 0.02) 0px, rgba(10, 22, 40, 0.02) 1px, transparent 1px, transparent 20px)'
+        ? 'linear-gradient(rgba(0, 10, 5, 0.95), rgba(0, 10, 5, 0.95)), repeating-linear-gradient(0deg, rgba(47, 243, 173, 0.03) 0px, rgba(47, 243, 173, 0.03) 1px, transparent 1px, transparent 15px), repeating-linear-gradient(90deg, rgba(47, 243, 173, 0.03) 0px, rgba(47, 243, 173, 0.03) 1px, transparent 1px, transparent 15px)'
+        : 'linear-gradient(rgba(240, 250, 245, 0.95), rgba(240, 250, 245, 0.95)), repeating-linear-gradient(0deg, rgba(10, 22, 40, 0.03) 0px, rgba(10, 22, 40, 0.03) 1px, transparent 1px, transparent 15px), repeating-linear-gradient(90deg, rgba(10, 22, 40, 0.03) 0px, rgba(10, 22, 40, 0.03) 1px, transparent 1px, transparent 15px)'
     }
   };
 
@@ -363,6 +536,57 @@ const Dashboard = () => {
     })}`;
   };
 
+  const lastScreenshotTimeRef = useRef(0);
+
+  const handleScreenshot = () => {
+    if (!activeConversation || !currentUser) return;
+    
+    const partner = getPartner(activeConversation);
+    if (!partner) return;
+
+    // 1. Emit to peer
+    emitScreenshotTaken(partner._id, activeConversationId);
+
+    // 2. Dispatch local system message
+    const systemMsg = {
+      _id: `sys-${Date.now()}-${Math.random()}`,
+      senderId: 'system',
+      plaintext: 'You took a screenshot!',
+      createdAt: new Date().toISOString(),
+      isSystem: true,
+    };
+
+    dispatch(
+      addMessage({
+        conversationId: activeConversationId,
+        message: systemMsg,
+      })
+    );
+  };
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+
+    const handleKeyDown = (e) => {
+      const isPrintScreen = e.key === 'PrintScreen';
+      const isWinScreenshot = e.metaKey && e.shiftKey && e.key.toLowerCase() === 's';
+      const isMacScreenshot = e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4');
+
+      if (isPrintScreen || isWinScreenshot || isMacScreenshot) {
+        const now = Date.now();
+        if (now - lastScreenshotTimeRef.current > 2000) {
+          lastScreenshotTimeRef.current = now;
+          handleScreenshot();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeConversationId, activeConversation, currentUser]);
+
   return (
     <div className="h-screen bg-surface-container-lowest text-on-surface flex flex-col font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative grid-bg">
       
@@ -387,12 +611,24 @@ const Dashboard = () => {
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           } md:translate-x-0 transition-transform duration-200 ease-in-out absolute md:relative z-30 w-80 h-full border-r border-outline-variant/30 bg-surface flex flex-col flex-shrink-0`}
         >
-          {/* User Profile Header */}
-          <div className="p-4 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-low/20">
-            <div className="flex items-center space-x-3">
-              <div className="h-9 w-9 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center font-code font-bold text-sm text-primary uppercase shadow-inner">
-                {currentUser?.username?.substring(0, 2)}
-              </div>
+          {showProfilePanel ? (
+            <UserProfilePanel currentUser={currentUser} onClose={() => setShowProfilePanel(false)} dispatch={dispatch} />
+          ) : (
+            <>
+              {/* User Profile Header */}
+              <div className="p-4 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-low/20">
+                <div className="flex items-center space-x-3">
+                  <div 
+                    onClick={() => setShowProfilePanel(true)}
+                    className="h-9 w-9 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center font-code font-bold text-sm text-primary uppercase shadow-inner overflow-hidden cursor-pointer flex-shrink-0"
+                    title="View Profile"
+                  >
+                    {currentUser?.profileImage ? (
+                      <img src={currentUser.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser?.username?.substring(0, 2)
+                    )}
+                  </div>
               <div>
                 <span className="font-headline font-semibold text-sm block text-on-surface">{currentUser?.username}</span>
                 <span className="text-[10px] text-on-surface-variant flex items-center space-x-1.5 font-code">
@@ -453,11 +689,15 @@ const Dashboard = () => {
                     onClick={() => handleSelectUser(user._id)}
                     className="w-full p-2.5 flex items-center space-x-3 hover:bg-surface-container-highest rounded-lg text-left transition-colors cursor-pointer"
                   >
-                    <div className="h-8 w-8 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center font-code text-xs font-semibold text-white">
-                      {user.username.substring(0, 2).toUpperCase()}
+                    <div className="h-8 w-8 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center font-code text-xs font-semibold text-white overflow-hidden flex-shrink-0">
+                      {user.profileImage ? (
+                        <img src={user.profileImage} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        user.username.substring(0, 2).toUpperCase()
+                      )}
                     </div>
                     <div>
-                      <div className="text-xs font-semibold text-white">{user.username}</div>
+                      <div className="text-xs font-semibold text-on-surface">{user.username}</div>
                       <div className="text-[10px] text-on-surface-variant/60 font-code">{user.email}</div>
                     </div>
                   </button>
@@ -514,8 +754,12 @@ const Dashboard = () => {
                 >
                   <div className="flex items-center space-x-3 overflow-hidden flex-1 min-w-0">
                     <div className="relative flex-shrink-0">
-                      <div className="h-9 w-9 rounded-lg bg-surface-container-highest border border-outline-variant/40 flex items-center justify-center font-code font-semibold text-xs text-on-surface uppercase">
-                        {partner?.username?.substring(0, 2)}
+                      <div className="h-9 w-9 rounded-lg bg-surface-container-highest border border-outline-variant/40 flex items-center justify-center font-code font-semibold text-xs text-on-surface uppercase overflow-hidden flex-shrink-0">
+                        {partner?.profileImage ? (
+                          <img src={partner.profileImage} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          partner?.username?.substring(0, 2)
+                        )}
                       </div>
                       <span
                         className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-surface flex items-center justify-center ${
@@ -570,6 +814,8 @@ const Dashboard = () => {
               );
             })}
           </div>
+          </>
+        )}
         </aside>
 
         {/* Mobile Sidebar Overlay Backdrop */}
@@ -585,11 +831,15 @@ const Dashboard = () => {
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 border-b border-outline-variant/30 px-6 flex items-center justify-between bg-surface/40 backdrop-blur-md z-10">
+              <div className="h-16 border-b border-outline-variant/30 px-6 flex items-center justify-between bg-surface/40 backdrop-blur-md z-20">
                 <div className="flex items-center space-x-3 overflow-hidden">
-                  <div className="relative">
-                    <div className="h-9 w-9 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center font-code font-bold text-xs text-on-surface uppercase">
-                      {getPartner(activeConversation)?.username?.substring(0, 2)}
+                  <div className="relative flex-shrink-0">
+                    <div className="h-9 w-9 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center font-code font-bold text-xs text-on-surface uppercase overflow-hidden flex-shrink-0">
+                      {getPartner(activeConversation)?.profileImage ? (
+                        <img src={getPartner(activeConversation).profileImage} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        getPartner(activeConversation)?.username?.substring(0, 2)
+                      )}
                     </div>
                     <span
                       className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-surface ${
@@ -665,10 +915,30 @@ const Dashboard = () => {
               </div>
 
               {/* Messages View - Monospace Chat Font Applied */}
-              <div 
-                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 font-code transition-all duration-300"
-                style={wallpapers[activeWallpaper]}
-              >
+              <div className="flex-1 relative overflow-hidden bg-surface-container-lowest/10">
+                {activeWallpaper === 'default' && (
+                  <div className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-20">
+                    <LineWaves
+                      speed={0.15}
+                      innerLineCount={28}
+                      outerLineCount={32}
+                      warpIntensity={0.6}
+                      rotation={-45}
+                      edgeFadeWidth={0.0}
+                      colorCycleSpeed={0.5}
+                      brightness={0.15}
+                      color1={isDarkMode ? "#2ff3ad" : "#0a1628"}
+                      color2={isDarkMode ? "#00e5a0" : "#4e5e84"}
+                      color3={isDarkMode ? "#c0c1ff" : "#ebeef1"}
+                      enableMouseInteraction={false}
+                    />
+                  </div>
+                )}
+                
+                <div 
+                  className="absolute inset-0 overflow-y-auto p-4 md:p-6 space-y-4 font-code transition-all duration-300 z-10"
+                  style={activeWallpaper !== 'default' ? wallpapers[activeWallpaper] : {}}
+                >
                 {/* Cryptographic key status banner */}
                 {!sharedSecrets[activeConversationId] && (
                   <div className="p-4 border border-secondary-dim/30 bg-secondary-container/5 text-secondary rounded-xl text-xs leading-relaxed flex items-start space-x-3 max-w-xl mx-auto shadow-lg backdrop-blur-md">
@@ -682,6 +952,20 @@ const Dashboard = () => {
 
                 {/* Message items */}
                 {(messages[activeConversationId] || []).map((msg, index) => {
+                  if (msg.isSystem) {
+                    return (
+                      <div 
+                        key={msg._id || `sys-${index}`} 
+                        className="flex justify-center my-3"
+                      >
+                        <div className="flex items-center gap-2 px-4 py-2 border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-code text-[10px] uppercase font-bold rounded-lg shadow-sm">
+                          <span className="material-symbols-outlined text-[14px]">photo_camera</span>
+                          <span>{msg.plaintext}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const isSelf = msg.senderId === currentUser?._id;
 
                   return (
@@ -692,7 +976,7 @@ const Dashboard = () => {
                       <div
                         className={`max-w-md rounded-xl p-3.5 text-xs border leading-relaxed shadow-lg relative ${
                           isSelf
-                            ? 'bg-surface-container-high/80 border-primary/30 text-black dark:text-white rounded-br-none glow-effect'
+                            ? 'bg-primary-container/20 dark:bg-surface-container-high/80 border-primary/30 text-black dark:text-white rounded-br-none glow-effect'
                             : 'bg-surface border-outline-variant/30 text-on-surface rounded-bl-none'
                         }`}
                       >
@@ -722,6 +1006,7 @@ const Dashboard = () => {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              </div>
 
               {/* Typing indicators */}
               {typingUsers[activeConversationId]?.length > 0 && (
@@ -732,7 +1017,7 @@ const Dashboard = () => {
               )}
 
               {/* Message Composer - Monospace Input Font Applied */}
-              <div className="p-4 border-t border-outline-variant/30 bg-surface/40 backdrop-blur-md">
+              <div className="p-4 border-t border-outline-variant/30 bg-surface/40 backdrop-blur-md relative z-20">
                 <form onSubmit={handleSendMessage} className="flex items-end space-x-3 max-w-7xl mx-auto">
                   <div className="flex-1 bg-surface-container-highest/60 border border-outline-variant/50 rounded-xl px-4 py-3 flex items-center focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all duration-200">
                     <textarea

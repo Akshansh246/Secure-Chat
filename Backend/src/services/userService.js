@@ -13,6 +13,31 @@ export const getMe = async (userId) => {
 };
 
 /**
+ * Update current user profile details (bio, dob, profileImage).
+ */
+export const updateMe = async (userId, updateData) => {
+  const allowedFields = ['bio', 'dob', 'profileImage'];
+  const filteredUpdates = {};
+
+  Object.keys(updateData).forEach((key) => {
+    if (allowedFields.includes(key)) {
+      filteredUpdates[key] = updateData[key];
+    }
+  });
+
+  const user = await User.findByIdAndUpdate(userId, filteredUpdates, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  return user;
+};
+
+/**
  * Search users by username or email (excludes the current user).
  * Returns at most 20 results, case-insensitive.
  */

@@ -181,6 +181,32 @@ export const initializeSocket = (accessToken) => {
     store.dispatch(setTypingStatus({ conversationId, userId, isTyping: false }));
   });
 
+  socket.on('screenshot:taken', ({ conversationId, userId }) => {
+    const state = store.getState();
+    const conversations = state.chat.conversations;
+    const conversation = conversations.find((c) => c._id === conversationId);
+
+    if (conversation) {
+      const partner = conversation.participants.find((p) => p._id === userId);
+      const username = partner ? partner.username : 'Someone';
+
+      const systemMessage = {
+        _id: `sys-${Date.now()}-${Math.random()}`,
+        senderId: 'system',
+        plaintext: `"${username}" took a screenshot!`,
+        createdAt: new Date().toISOString(),
+        isSystem: true,
+      };
+
+      store.dispatch(
+        addMessage({
+          conversationId,
+          message: systemMessage,
+        })
+      );
+    }
+  });
+
   // --- E2EE Peer Key Sync Events ---
 
   socket.on('key:request', async (data) => {
@@ -305,6 +331,18 @@ export const emitMessageSeen = (messageIds, senderId, conversationId) => {
     socket.emit('message:seen', {
       messageIds,
       senderId,
+      conversationId,
+    });
+  }
+};
+
+/**
+ * Emit screenshot notification.
+ */
+export const emitScreenshotTaken = (recipientId, conversationId) => {
+  if (socket) {
+    socket.emit('screenshot:taken', {
+      recipientId,
       conversationId,
     });
   }

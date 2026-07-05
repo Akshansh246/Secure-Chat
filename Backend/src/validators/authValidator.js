@@ -14,6 +14,10 @@ export const registerSchema = Joi.object({
     'string.min': 'Password must be at least 8 characters',
     'any.required': 'Password is required',
   }),
+  dob: Joi.date().required().messages({
+    'date.base': 'Please provide a valid Date of Birth',
+    'any.required': 'Date of Birth is required',
+  }),
 });
 
 export const loginSchema = Joi.object({

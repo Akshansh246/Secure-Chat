@@ -30,7 +30,9 @@ export const initializeSocket = (accessToken) => {
     socket.disconnect();
   }
 
-  socket = io('http://localhost:3000', {
+  // Connect to the same origin using a relative path.
+  // In development, Vite dev proxy handles the routing; in production, Express handles it directly.
+  socket = io('/', {
     auth: {
       token: accessToken,
     },

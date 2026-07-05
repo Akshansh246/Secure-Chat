@@ -2,10 +2,11 @@ import axios from 'axios';
 import { store } from '../store/index.js';
 import { logOut, updateAccessToken } from '../store/slices/authSlice.js';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

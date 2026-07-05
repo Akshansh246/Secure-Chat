@@ -93,11 +93,13 @@ app.use('/api/keys', keyRoutes);
 
 // --- 404 Handler ---
 
-app.all('/{*path}', (req, res, next) => {
+// API-only 404
+app.all('/api/*path', (req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
 });
 
-app.get('/{*path}', (req, res) => {
+// React SPA fallback
+app.get('/*path', (req, res) => {
   res.sendFile(path.resolve('public/index.html'));
 });
 

@@ -13,7 +13,7 @@ const config = {
   },
   aesMasterKey: process.env.AES_MASTER_KEY,
   kyberSecret: process.env.KYBER_SECRET,
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+  clientUrl: process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:5173'),
   nodeEnv: process.env.NODE_ENV || 'development',
 };
 

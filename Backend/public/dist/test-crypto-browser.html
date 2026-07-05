@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Crypto Test</title>
+  <style>
+    body { background-color: #000; color: #fff; font-family: monospace; padding: 20px; }
+    h1 { color: #fff; border-bottom: 1px solid #222; padding-bottom: 10px; }
+    .success { color: #4ade80; }
+    .error { color: #f87171; }
+    pre { background: #111; padding: 15px; border: 1px solid #222; border-radius: 4px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Browser E2EE Cryptographic Test</h1>
+  <div id="status">Running tests...</div>
+  <pre id="output"></pre>
+
+  <!-- Import ML-KEM from noble-post-quantum via ES modules -->
+  <script type="module">
+    import { ml_kem1024 } from 'https://esm.run/@noble/post-quantum@0.2.0/ml-kem';
+
+    const log = (msg, isSuccess = null) => {
+      const output = document.getElementById('output');
+      const span = document.createElement('span');
+      if (isSuccess === true) span.className = 'success';
+      if (isSuccess === false) span.className = 'error';
+      span.textContent = msg + '\n';
+      output.appendChild(span);
+    };
+
+    const base64ToBytes = (base64) => {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    };
+
+    const bytesToBase64 = (bytes) => {
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return window.btoa(binary);
+    };
+
+    const runTests = async () => {
+      try {
+        log("1. Generating ML-KEM-1024 Keypair...");
+        const kp = ml_kem1024.keygen();
+        const pkBase64 = bytesToBase64(kp.publicKey);
+        const skBase64 = bytesToBase64(kp.secretKey);
+        log(`   Public Key: ${pkBase64.substring(0, 40)}... (length: ${kp.publicKey.length} bytes)`);
+        log(`   Private Key: ${skBase64.substring(0, 40)}... (length: ${kp.secretKey.length} bytes)`);
+
+        log("\n2. Encapsulating Public Key...");
+        const pkBytes = base64ToBytes(pkBase64);
+        const { cipherText, sharedSecret } = ml_kem1024.encapsulate(pkBytes);
+        const ctBase64 = bytesToBase64(cipherText);
+        log(`   Ciphertext: ${ctBase64.substring(0, 40)}... (length: ${cipherText.length} bytes)`);
+        log(`   Shared Secret (hex): ${Array.from(sharedSecret).map(b => b.toString(16).padStart(2, '0')).join('')}`);
+
+        log("\n3. Decapsulating Ciphertext...");
+        const ctBytes = base64ToBytes(ctBase64);
+        const skBytes = base64ToBytes(skBase64);
+        const recoveredSecret = ml_kem1024.decapsulate(ctBytes, skBytes);
+        log(`   Recovered Secret (hex): ${Array.from(recoveredSecret).map(b => b.toString(16).padStart(2, '0')).join('')}`);
+
+        const secretsMatch = Array.from(sharedSecret).every((val, i) => val === recoveredSecret[i]);
+        log(`   Secrets match: ${secretsMatch}`, secretsMatch);
+
+        log("\n4. Deriving AES-GCM keys using HKDF-SHA256...");
+        const baseKey = await window.crypto.subtle.importKey(
+          'raw',
+          sharedSecret,
+          'HKDF',
+          false,
+          ['deriveKey']
+        );
+
+        const messageKey = await window.crypto.subtle.deriveKey(
+          {
+            name: 'HKDF',
+            hash: 'SHA-256',
+            salt: new Uint8Array(0),
+            info: new TextEncoder().encode('message-encryption-key'),
+          },
+          baseKey,
+          { name: 'AES-GCM', length: 256 },
+          true,
+          ['encrypt', 'decrypt']
+        );
+        log("   HKDF derivation successful.");
+
+        log("\n5. Testing AES-GCM Encryption...");
+        const plaintext = "Secret post-quantum message content";
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const plaintextBytes = new TextEncoder().encode(plaintext);
+
+        const encryptedBuffer = await window.crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv },
+          messageKey,
+          plaintextBytes
+        );
+
+        const encryptedBytes = new Uint8Array(encryptedBuffer);
+        const ciphertextBytes = encryptedBytes.slice(0, -16);
+        const authTagBytes = encryptedBytes.slice(-16);
+
+        log(`   Encrypted Ciphertext: ${bytesToBase64(ciphertextBytes)}`);
+        log(`   Auth Tag: ${bytesToBase64(authTagBytes)}`);
+
+        log("\n6. Testing AES-GCM Decryption...");
+        const combinedBytes = new Uint8Array(ciphertextBytes.length + authTagBytes.length);
+        combinedBytes.set(ciphertextBytes);
+        combinedBytes.set(authTagBytes, ciphertextBytes.length);
+
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv },
+          messageKey,
+          combinedBytes
+        );
+        const decryptedText = new TextDecoder().decode(decryptedBuffer);
+        log(`   Decrypted Text: "${decryptedText}"`);
+        const decMatches = decryptedText === plaintext;
+        log(`   Decryption matches original: ${decMatches}`, decMatches);
+
+        document.getElementById('status').textContent = "Tests completed successfully.";
+        document.getElementById('status').className = 'success';
+      } catch (err) {
+        log(`\n❌ Error: ${err.message}`, false);
+        log(err.stack, false);
+        document.getElementById('status').textContent = "Tests failed.";
+        document.getElementById('status').className = 'error';
+      }
+    };
+
+    runTests();
+  </script>
+</body>
+</html>

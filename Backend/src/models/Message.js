@@ -1,0 +1,27 @@
+import mongoose from 'mongoose';
+
+const messageSchema = new mongoose.Schema(
+  {
+    // Only the double-encrypted blob is stored — no plaintext, no readable metadata
+    encryptedBlob: {
+      type: String,
+      required: [true, 'Encrypted message blob is required'],
+    },
+    conversationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Conversation',
+      required: [true, 'Conversation ID is required'],
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Compound index for paginated message fetching
+messageSchema.index({ conversationId: 1, createdAt: -1 });
+
+const Message = mongoose.model('Message', messageSchema);
+
+export default Message;

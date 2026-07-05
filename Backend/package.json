@@ -1,0 +1,35 @@
+{
+  "name": "secure-chat-backend",
+  "version": "1.0.0",
+  "description": "Post-Quantum Cryptography Secure Real-Time Chat Backend",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["chat", "encryption", "post-quantum", "kyber", "socket.io"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@noble/post-quantum": "^0.2.2",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.7.3",
+    "morgan": "^1.10.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

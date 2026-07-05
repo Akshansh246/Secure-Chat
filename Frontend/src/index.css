@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2ff3ad;
+  --color-primary-container: #00e5a0;
+  --color-primary-dim: #00d293;
+  --color-background: #0e0e11;
+  --color-surface: #0e0e11;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-low: #131317;
+  --color-surface-container: #19191e;
+  --color-surface-container-high: #1f1f24;
+  --color-surface-container-highest: #25252b;
+  --color-surface-bright: #2b2c32;
+  --color-surface-dim: #0e0e11;
+  --color-on-background: #e6e4ec;
+  --color-on-surface: #e6e4ec;
+  --color-on-surface-variant: #abaab2;
+  --color-outline: #75757c;
+  --color-outline-variant: #47474e;
+  --color-error: #fa746f;
+  --color-error-container: #871f21;
+  --color-error-dim: #c54d4a;
+  --color-on-error-container: #ff9993;
+
+  --color-secondary: #c0c1ff;
+  --color-secondary-container: #201cb4;
+  --color-secondary-dim: #6063ee;
+  --color-on-secondary-container: #b8b9ff;
+
+  --color-tertiary: #ac8aff;
+  --color-tertiary-container: #8f60fa;
+  --color-tertiary-dim: #8455ef;
+
+  --font-sans: "Inter", sans-serif;
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-code: "JetBrains Mono", monospace;
+  
+  --radius-default: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-sans);
+}
+
+/* Custom Scrollbar for a premium minimal feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-container-high);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-outline-variant);
+}
+
+/* Custom Utility Classes matching Stitch Design Vibe */
+.grid-bg {
+  background-image: 
+      linear-gradient(to right, rgba(71, 71, 78, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(71, 71, 78, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.scanline {
+  width: 100%;
+  height: 100px;
+  z-index: 10;
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(47,243,173,0.05) 50%, rgba(0,0,0,0) 100%);
+  opacity: 0.1;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.glass-panel {
+  background: rgba(25, 25, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(71, 71, 78, 0.3);
+}
+
+.glow-effect {
+  box-shadow: 0 0 20px 2px rgba(47, 243, 173, 0.1);
+}
+
+.pulse-dot {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(47, 243, 173, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(47, 243, 173, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(47, 243, 173, 0); }
+}
+
+/* Pulse animation for active security indicator */
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glass Card */
+.glass-card {
+  background: rgba(25, 25, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(71, 71, 78, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Smooth textarea */
+textarea {
+  resize: none;
+}

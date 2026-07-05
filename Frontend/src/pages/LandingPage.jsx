@@ -10,7 +10,7 @@ const LandingPage = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
   return (
-    <div className="min-h-dvh bg-background text-on-surface font-sans antialiased overflow-x-hidden selection:bg-primary-container/30 selection:text-primary flex flex-col">
+    <div className="h-full overflow-y-auto bg-background text-on-surface font-sans antialiased overflow-x-hidden selection:bg-primary-container/30 selection:text-primary flex flex-col">
       {/* Top Navigation Bar */}
       <header className="fixed top-0 w-full bg-surface/60 backdrop-blur-xl border-b border-outline-variant/30 z-50">
         <div className="flex justify-between items-center h-20 px-6 max-w-7xl mx-auto">
@@ -66,7 +66,7 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="relative min-h-dvh flex items-center justify-center pt-32 pb-16 grid-bg overflow-hidden flex-1">
+      <main className="relative min-h-dvh flex justify-center pt-32 pb-16 grid-bg overflow-hidden flex-1">
         {/* WebGL FaultyTerminal Background */}
         <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
           <FaultyTerminal
@@ -92,7 +92,7 @@ const LandingPage = () => {
         {/* Subtle radial gradient overlay for depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container-lowest/20 to-surface-container-lowest pointer-events-none z-10"></div>
         
-        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 flex flex-col items-center text-center my-auto">
           
           {/* Status Badge */}
           <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 mb-8">

@@ -1,5 +1,5 @@
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import './FaultyTerminal.css';
 
 const vertexShader = `
@@ -252,6 +252,17 @@ export default function FaultyTerminal({
   const loadAnimationStartRef = useRef(0);
   const timeOffsetRef = useRef(0);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const tintVec = useMemo(() => hexToRgb(tint), [tint]);
 
   const ditherValue = useMemo(() => (typeof dither === 'boolean' ? (dither ? 1 : 0) : dither), [dither]);
@@ -273,6 +284,8 @@ export default function FaultyTerminal({
   }, []);
 
   useEffect(() => {
+    if (isMobile) return;
+
     if (timeOffsetRef.current === 0) {
       timeOffsetRef.current = Math.random() * 100;
     }
@@ -385,6 +398,7 @@ export default function FaultyTerminal({
       timeOffsetRef.current = Math.random() * 100;
     };
   }, [
+    isMobile,
     dpr,
     pause,
     timeScale,
@@ -409,5 +423,25 @@ export default function FaultyTerminal({
     handleMouseMove
   ]);
 
-  return <div ref={containerRef} className={`faulty-terminal-container ${className}`} style={style} {...rest} />;
+  if (isMobile) {
+    const r = Math.round(tintR * 255);
+    const g = Math.round(tintG * 255);
+    const b = Math.round(tintB * 255);
+    const glowColor = `rgba(${r}, ${g}, ${b}, 0.12)`;
+    const glowColorSubtle = `rgba(${r}, ${g}, ${b}, 0.04)`;
+
+    const fallbackStyle = {
+      ...style,
+      background: `radial-gradient(circle at 50% 25%, ${glowColor} 0%, transparent 60%),
+                   radial-gradient(circle at 10% 80%, ${glowColorSubtle} 0%, transparent 40%),
+                   radial-gradient(circle at 90% 70%, ${glowColorSubtle} 0%, transparent 45%),
+                   #030303`,
+      width: '100%',
+      height: '100%',
+    };
+
+    return <div className={`faulty-terminal-container faulty-terminal-mobile-fallback ${className || ''}`} style={fallbackStyle} {...rest} />;
+  }
+
+  return <div ref={containerRef} className={`faulty-terminal-container ${className || ''}`} style={style} {...rest} />;
 }

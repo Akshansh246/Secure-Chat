@@ -60,7 +60,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-background text-on-surface antialiased flex flex-col justify-center items-center px-4 py-12 selection:bg-primary/30 selection:text-primary relative grid-bg">
+    <div className="h-full overflow-y-auto bg-background text-on-surface antialiased flex flex-col items-center px-4 py-12 selection:bg-primary/30 selection:text-primary relative grid-bg">
       {/* WebGL FaultyTerminal Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <FaultyTerminal
@@ -86,7 +86,7 @@ const SignUp = () => {
       <div className="fixed top-1/4 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="fixed bottom-1/4 -right-32 w-96 h-96 bg-tertiary-dim/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      <main className="relative z-10 flex flex-col items-center justify-center w-full max-w-[480px]">
+      <main className="relative z-10 flex flex-col items-center justify-center w-full max-w-[480px] my-auto py-8">
         {/* Brand Header */}
         <Link to="/" className="flex items-center gap-3 mb-10 group no-underline outline-none justify-center">
           <img src={logo} alt="SecureChat Logo" className="h-12 w-auto" />

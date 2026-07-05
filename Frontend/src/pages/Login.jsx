@@ -5,6 +5,7 @@ import { loginUser } from '../services/authService.js';
 import { setError } from '../store/slices/authSlice.js';
 import { selectIsAuthenticated } from '../store/slices/authSlice.js';
 import logo from '../assets/logo.svg';
+import FaultyTerminal from '../components/FaultyTerminal';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -50,6 +51,27 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-surface-container-lowest text-on-surface flex flex-col justify-center items-center px-4 selection:bg-primary/30 selection:text-primary relative grid-bg">
+      {/* WebGL FaultyTerminal Background */}
+      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+        <FaultyTerminal
+          scale={1.5}
+          gridMul={[2, 1]}
+          digitSize={1.2}
+          timeScale={0.8}
+          pause={false}
+          scanlineIntensity={0.8}
+          glitchAmount={1.0}
+          flickerAmount={0.8}
+          noiseAmp={1.2}
+          chromaticAberration={0.3}
+          curvature={0.0}
+          tint="#00e5a0"
+          mouseReact={true}
+          mouseStrength={0.5}
+          pageLoadAnimation={false}
+          brightness={1.2}
+        />
+      </div>
       {/* Decorative background elements */}
       <div className="fixed top-1/4 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="fixed bottom-1/4 -right-32 w-96 h-96 bg-tertiary-dim/5 rounded-full blur-3xl pointer-events-none"></div>

@@ -59,6 +59,114 @@ const Dashboard = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Theme & Wallpaper states
+  const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+  const [activeWallpaper, setActiveWallpaper] = useState('default');
+  const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      if (next) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return next;
+    });
+  };
+
+  const playKeyboardClickSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+
+      // Sound 1: High frequency mechanical contact click (metallic pop)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1600, ctx.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.03);
+      
+      gain1.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.03);
+      
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start();
+      osc1.stop(ctx.currentTime + 0.035);
+
+      // Sound 2: Heavy physical wood-block/keycap "thock" resonance
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(220, ctx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.05);
+      
+      gain2.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05);
+      
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start();
+      osc2.stop(ctx.currentTime + 0.055);
+
+      // Sound 3: Key friction noise burst (the realistic slider friction sound)
+      const bufferSize = ctx.sampleRate * 0.02; // 20ms of noise
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      
+      const noiseNode = ctx.createBufferSource();
+      noiseNode.buffer = buffer;
+      
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.setValueAtTime(1000, ctx.currentTime);
+      noiseFilter.Q.setValueAtTime(1.5, ctx.currentTime);
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.03, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.02);
+      
+      noiseNode.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      
+      noiseNode.start();
+      noiseNode.stop(ctx.currentTime + 0.025);
+    } catch (e) {
+      // Mute audio play blockages
+    }
+  };
+
+  const wallpapers = {
+    default: {},
+    quantum: {
+      backgroundImage: isDarkMode 
+        ? 'radial-gradient(circle at 50% 50%, rgba(47, 243, 173, 0.08), #09090b)'
+        : 'radial-gradient(circle at 50% 50%, rgba(10, 22, 40, 0.06), #ffffff)'
+    },
+    cyber: {
+      backgroundImage: isDarkMode
+        ? 'linear-gradient(135deg, rgba(143, 96, 250, 0.08) 0%, rgba(47, 243, 173, 0.08) 100%)'
+        : 'linear-gradient(135deg, rgba(193, 209, 253, 0.3) 0%, rgba(247, 250, 253, 0.9) 100%)'
+    },
+    aurora: {
+      backgroundImage: isDarkMode
+        ? 'radial-gradient(circle at top right, rgba(47, 243, 173, 0.08), transparent 60%), radial-gradient(circle at bottom left, rgba(143, 96, 250, 0.08), transparent 60%)'
+        : 'radial-gradient(circle at top right, rgba(0, 229, 160, 0.1), transparent 60%), radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.1), transparent 60%)'
+    },
+    matrix: {
+      backgroundImage: isDarkMode
+        ? 'repeating-linear-gradient(0deg, rgba(47, 243, 173, 0.02) 0px, rgba(47, 243, 173, 0.02) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(47, 243, 173, 0.02) 0px, rgba(47, 243, 173, 0.02) 1px, transparent 1px, transparent 20px)'
+        : 'repeating-linear-gradient(0deg, rgba(10, 22, 40, 0.02) 0px, rgba(10, 22, 40, 0.02) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, rgba(10, 22, 40, 0.02) 0px, rgba(10, 22, 40, 0.02) 1px, transparent 1px, transparent 20px)'
+    }
+  };
+
   // Refs
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -217,6 +325,9 @@ const Dashboard = () => {
   const handleInputChange = (e) => {
     setMessageText(e.target.value);
 
+    // Play rustic keyboard typing click sound
+    playKeyboardClickSound();
+
     if (!isTyping) {
       handleTyping(true);
     }
@@ -283,20 +394,33 @@ const Dashboard = () => {
                 {currentUser?.username?.substring(0, 2)}
               </div>
               <div>
-                <span className="font-headline font-semibold text-sm block text-white">{currentUser?.username}</span>
+                <span className="font-headline font-semibold text-sm block text-on-surface">{currentUser?.username}</span>
                 <span className="text-[10px] text-on-surface-variant flex items-center space-x-1.5 font-code">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary pulse-dot" />
                   <span>Secure Core Online</span>
                 </span>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="hidden md:flex p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-all cursor-pointer border border-transparent hover:border-outline-variant/30"
-              title="Lock Secure Keychain"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={toggleTheme}
+                className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-all cursor-pointer border border-transparent hover:border-outline-variant/30 flex items-center justify-center"
+                title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {isDarkMode ? (
+                  <span className="material-symbols-outlined text-[16px]">light_mode</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[16px]">dark_mode</span>
+                )}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="hidden md:flex p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-all cursor-pointer border border-transparent hover:border-outline-variant/30"
+                title="Lock Secure Keychain"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           {/* Search Contacts */}
@@ -400,7 +524,7 @@ const Dashboard = () => {
                       />
                     </div>
                     <div className="overflow-hidden flex-1 min-w-0">
-                      <span className="font-headline font-semibold text-xs block text-white truncate">
+                      <span className="font-headline font-semibold text-xs block text-on-surface truncate">
                         {partner?.username}
                       </span>
                       <span
@@ -448,6 +572,14 @@ const Dashboard = () => {
           </div>
         </aside>
 
+        {/* Mobile Sidebar Overlay Backdrop */}
+        {mobileMenuOpen && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-20 transition-opacity duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Chat Area */}
         <main className="flex-1 bg-surface-container-lowest/40 flex flex-col h-full overflow-hidden relative">
           {activeConversation ? (
@@ -456,7 +588,7 @@ const Dashboard = () => {
               <div className="h-16 border-b border-outline-variant/30 px-6 flex items-center justify-between bg-surface/40 backdrop-blur-md z-10">
                 <div className="flex items-center space-x-3 overflow-hidden">
                   <div className="relative">
-                    <div className="h-9 w-9 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center font-code font-bold text-xs text-white uppercase">
+                    <div className="h-9 w-9 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center font-code font-bold text-xs text-on-surface uppercase">
                       {getPartner(activeConversation)?.username?.substring(0, 2)}
                     </div>
                     <span
@@ -468,7 +600,7 @@ const Dashboard = () => {
                     />
                   </div>
                   <div className="overflow-hidden">
-                    <span className="font-headline font-bold text-sm text-white block leading-tight">
+                    <span className="font-headline font-bold text-sm text-on-surface block leading-tight">
                       {getPartner(activeConversation)?.username}
                     </span>
                     <span className="text-[10px] text-on-surface-variant block truncate mt-0.5 font-code">
@@ -480,6 +612,51 @@ const Dashboard = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {/* Theme Mode Toggle */}
+                  <button 
+                    onClick={toggleTheme}
+                    className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors cursor-pointer border border-outline-variant/30 flex items-center justify-center"
+                    title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                  >
+                    {isDarkMode ? (
+                      <span className="material-symbols-outlined text-[18px]">light_mode</span>
+                    ) : (
+                      <span className="material-symbols-outlined text-[18px]">dark_mode</span>
+                    )}
+                  </button>
+
+                  {/* Wallpaper Picker */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
+                      className="p-2 hover:bg-surface-container-high rounded-lg text-on-surface-variant hover:text-primary transition-colors cursor-pointer border border-outline-variant/30 flex items-center justify-center"
+                      title="Change Wallpaper"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">palette</span>
+                    </button>
+                    {showWallpaperMenu && (
+                      <div className="absolute right-0 mt-2 bg-surface border border-outline-variant rounded-xl shadow-2xl z-50 p-3 min-w-[160px] flex flex-col gap-1.5 glass-panel">
+                        <div className="text-[9px] text-on-surface-variant/50 font-code font-bold uppercase pb-1 border-b border-outline-variant/30 tracking-wider">Select Wallpaper</div>
+                        {Object.keys(wallpapers).map((wp) => (
+                          <button
+                            key={wp}
+                            onClick={() => {
+                              setActiveWallpaper(wp);
+                              setShowWallpaperMenu(false);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-md font-code text-[11px] capitalize transition-colors cursor-pointer ${
+                              activeWallpaper === wp 
+                                ? 'bg-primary text-surface-container-lowest font-semibold' 
+                                : 'hover:bg-surface-container-high text-on-surface'
+                            }`}
+                          >
+                            {wp}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex items-center space-x-1.5 px-3 py-1 border border-primary/30 rounded-full bg-primary/5 text-[10px] text-primary font-code font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(47,243,173,0.05)]">
                     <Lock className="h-3 w-3 text-primary" />
                     <span>ML-KEM E2EE</span>
@@ -488,13 +665,16 @@ const Dashboard = () => {
               </div>
 
               {/* Messages View - Monospace Chat Font Applied */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 font-code">
+              <div 
+                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 font-code transition-all duration-300"
+                style={wallpapers[activeWallpaper]}
+              >
                 {/* Cryptographic key status banner */}
                 {!sharedSecrets[activeConversationId] && (
                   <div className="p-4 border border-secondary-dim/30 bg-secondary-container/5 text-secondary rounded-xl text-xs leading-relaxed flex items-start space-x-3 max-w-xl mx-auto shadow-lg backdrop-blur-md">
                     <Lock className="h-4.5 w-4.5 mt-0.5 flex-shrink-0 text-secondary-dim animate-pulse" />
                     <div>
-                      <span className="font-headline font-bold block mb-0.5 text-white">Device Key Syncing</span>
+                      <span className="font-headline font-bold block mb-0.5 text-on-surface">Device Key Syncing</span>
                       Waiting for the online peer to safely relay the conversation shared key over Socket.IO. Past messages will decrypt once synced.
                     </div>
                   </div>
@@ -512,7 +692,7 @@ const Dashboard = () => {
                       <div
                         className={`max-w-md rounded-xl p-3.5 text-xs border leading-relaxed shadow-lg relative ${
                           isSelf
-                            ? 'bg-surface-container-high/80 border-primary/30 text-white rounded-br-none glow-effect'
+                            ? 'bg-surface-container-high/80 border-primary/30 text-black dark:text-white rounded-br-none glow-effect'
                             : 'bg-surface border-outline-variant/30 text-on-surface rounded-bl-none'
                         }`}
                       >
@@ -560,7 +740,7 @@ const Dashboard = () => {
                       value={messageText}
                       onChange={handleInputChange}
                       rows={1}
-                      className="flex-1 bg-transparent border-0 outline-none text-xs text-white placeholder:text-on-surface-variant/30 resize-none align-middle self-center py-0.5 font-code focus:ring-0"
+                      className="flex-1 bg-transparent border-0 outline-none text-xs text-on-surface placeholder:text-on-surface-variant/30 resize-none align-middle self-center py-0.5 font-code focus:ring-0"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();

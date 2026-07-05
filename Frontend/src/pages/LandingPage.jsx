@@ -4,6 +4,7 @@ import { Shield, Key, EyeOff, Cpu, ArrowRight, Activity, Terminal } from 'lucide
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated } from '../store/slices/authSlice.js';
 import logo from '../assets/logo.svg';
+import FaultyTerminal from '../components/FaultyTerminal';
 
 const LandingPage = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -39,7 +40,7 @@ const LandingPage = () => {
             {isAuthenticated ? (
               <Link
                 to="/chat"
-                className="bg-primary-container text-on-primary-container font-code text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-primary transition-all duration-200 active:scale-95 flex items-center gap-2 glow-effect"
+                className="bg-primary-container text-black font-code text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-primary transition-all duration-200 active:scale-95 flex items-center gap-2 glow-effect"
               >
                 Go to Dashboard
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -54,7 +55,7 @@ const LandingPage = () => {
                 </Link>
                 <Link
                   to="/signup"
-                  className="bg-primary-container text-on-primary-container font-code text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-primary transition-all duration-200 active:scale-95 flex items-center gap-2 glow-effect"
+                  className="bg-primary-container text-black font-code text-xs font-semibold px-6 py-2.5 rounded-full hover:bg-primary transition-all duration-200 active:scale-95 flex items-center gap-2 glow-effect"
                 >
                   Get Started
                 </Link>
@@ -66,6 +67,27 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <main className="relative min-h-screen flex items-center justify-center pt-32 pb-16 grid-bg overflow-hidden flex-1">
+        {/* WebGL FaultyTerminal Background */}
+        <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
+          <FaultyTerminal
+            scale={1.5}
+            gridMul={[2, 1]}
+            digitSize={1.2}
+            timeScale={0.8}
+            pause={false}
+            scanlineIntensity={0.8}
+            glitchAmount={1.0}
+            flickerAmount={0.8}
+            noiseAmp={1.2}
+            chromaticAberration={0.3}
+            curvature={0.0}
+            tint="#00e5a0"
+            mouseReact={true}
+            mouseStrength={0.5}
+            pageLoadAnimation={false}
+            brightness={1.2}
+          />
+        </div>
         <div className="scanline"></div>
         {/* Subtle radial gradient overlay for depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-surface-container-lowest/20 to-surface-container-lowest pointer-events-none z-10"></div>
@@ -95,7 +117,7 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center gap-4 mb-16 w-full justify-center">
             <Link
               to={isAuthenticated ? "/chat" : "/signup"}
-              className="w-full sm:w-auto bg-primary text-on-surface-variant font-code text-sm font-bold px-8 py-3.5 rounded-full hover:bg-primary-container transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 glow-effect"
+              className="w-full sm:w-auto bg-primary text-black font-code text-sm font-bold px-8 py-3.5 rounded-full hover:bg-primary-container transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 glow-effect"
             >
               Get Started
               <ArrowRight className="h-4 w-4" />

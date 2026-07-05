@@ -10,6 +10,7 @@ import config from './config/index.js';
 import { globalLimiter } from './middleware/rateLimiter.js';
 import errorHandler from './middleware/errorHandler.js';
 import AppError from './utils/AppError.js';
+import path from 'path';
 
 // Route imports
 import authRoutes from './routes/authRoutes.js';
@@ -94,6 +95,10 @@ app.use('/api/keys', keyRoutes);
 
 app.all('/{*path}', (req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
+});
+
+app.get('/{*path}', (req, res) => {
+  res.sendFile(path.resolve('public/index.html'));
 });
 
 // --- Global Error Handler ---

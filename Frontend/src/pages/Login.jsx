@@ -50,7 +50,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface-container-lowest text-on-surface flex flex-col justify-center items-center px-4 selection:bg-primary/30 selection:text-primary relative grid-bg">
+    <div className="min-h-dvh bg-surface-container-lowest text-on-surface flex flex-col justify-center items-center px-4 selection:bg-primary/30 selection:text-primary relative grid-bg">
       {/* WebGL FaultyTerminal Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <FaultyTerminal

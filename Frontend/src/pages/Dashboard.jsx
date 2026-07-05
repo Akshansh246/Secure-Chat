@@ -351,9 +351,15 @@ const Dashboard = () => {
   const textareaRef = useRef(null);
   const emojiButtonRef = useRef(null);
 
-  // Keep activeConversationIdRef updated for socket closures
+  // Keep activeConversationIdRef updated for socket closures and auto-show mobile sidebar if no active conversation
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
+    if (!activeConversationId) {
+      const timer = setTimeout(() => {
+        setMobileMenuOpen(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
   }, [activeConversationId]);
 
   // 1. Initialize Auth Check, Fetch Conversations, and Socket.IO
@@ -430,7 +436,12 @@ const Dashboard = () => {
 
   // 3. Scroll to bottom of message list on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    };
+    scrollToBottom();
+    const timer = setTimeout(scrollToBottom, 50);
+    return () => clearTimeout(timer);
   }, [messages, activeConversationId]);
 
   // 4. Handle User Search
@@ -634,7 +645,7 @@ const Dashboard = () => {
   }, [activeConversationId, activeConversation, currentUser]);
 
   return (
-    <div className="h-screen bg-surface-container-lowest text-on-surface flex flex-col font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative grid-bg">
+    <div className="h-dvh bg-surface-container-lowest text-on-surface flex flex-col font-sans selection:bg-primary/30 selection:text-primary overflow-hidden relative grid-bg">
       
       {/* Mobile Header */}
       <header className="md:hidden border-b border-outline-variant/30 h-16 flex items-center justify-between px-4 bg-surface/80 backdrop-blur-md z-40">

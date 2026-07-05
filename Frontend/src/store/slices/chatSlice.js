@@ -57,6 +57,10 @@ const chatSlice = createSlice({
   reducers: {
     setConversations: (state, action) => {
       state.conversations = action.payload;
+      action.payload.forEach((conv) => {
+        state.unreadCounts[conv._id] = conv.unreadCount || 0;
+      });
+      saveUnreadCounts(state.unreadCounts);
     },
     updateConversation: (state, action) => {
       const updated = action.payload;
@@ -82,10 +86,20 @@ const chatSlice = createSlice({
       if (!state.messages[conversationId]) {
         state.messages[conversationId] = [];
       }
+      
+      // Normalize message ID to ensure _id is always set (helps socket-relayed messages)
+      const normalizedMessage = {
+        ...message,
+        _id: message._id || message.messageId,
+      };
+
       // Check for duplicates (e.g. self messages sent via socket vs api)
-      const exists = state.messages[conversationId].some((m) => m._id === message._id);
+      const exists = normalizedMessage._id && state.messages[conversationId].some(
+        (m) => (m._id || m.messageId) === normalizedMessage._id
+      );
+
       if (!exists) {
-        state.messages[conversationId].push(message);
+        state.messages[conversationId] = [...state.messages[conversationId], normalizedMessage];
       }
     },
     setSharedSecret: (state, action) => {
@@ -128,7 +142,7 @@ const chatSlice = createSlice({
       const { conversationId, messageId, status } = action.payload;
       const msgs = state.messages[conversationId];
       if (msgs) {
-        const msg = msgs.find((m) => m._id === messageId);
+        const msg = msgs.find((m) => m._id === messageId || m.messageId === messageId);
         if (msg) {
           msg.status = status;
         }

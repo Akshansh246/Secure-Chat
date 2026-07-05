@@ -10,7 +10,7 @@ const LandingPage = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-sans antialiased overflow-x-hidden selection:bg-primary-container/30 selection:text-primary flex flex-col">
+    <div className="min-h-dvh bg-background text-on-surface font-sans antialiased overflow-x-hidden selection:bg-primary-container/30 selection:text-primary flex flex-col">
       {/* Top Navigation Bar */}
       <header className="fixed top-0 w-full bg-surface/60 backdrop-blur-xl border-b border-outline-variant/30 z-50">
         <div className="flex justify-between items-center h-20 px-6 max-w-7xl mx-auto">
@@ -66,7 +66,7 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="relative min-h-screen flex items-center justify-center pt-32 pb-16 grid-bg overflow-hidden flex-1">
+      <main className="relative min-h-dvh flex items-center justify-center pt-32 pb-16 grid-bg overflow-hidden flex-1">
         {/* WebGL FaultyTerminal Background */}
         <div className="absolute inset-0 z-0 opacity-60 pointer-events-none">
           <FaultyTerminal

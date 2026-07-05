@@ -305,6 +305,7 @@ export const fetchMessages = (conversation) => async (dispatch, getState) => {
         decryptedMessages.push({
           ...msg,
           ...decrypted,
+          status: msg.status || decrypted.status,
           decrypted: true,
         });
       } catch (decErr) {
@@ -427,6 +428,7 @@ export const decryptIncomingMessage = async (conversation, msg) => {
     return {
       ...msg,
       ...decrypted,
+      status: msg.status || decrypted.status,
       decrypted: true,
     };
   } catch (error) {

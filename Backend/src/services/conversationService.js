@@ -1,5 +1,6 @@
 import Conversation from '../models/Conversation.js';
 import User from '../models/User.js';
+import Message from '../models/Message.js';
 import AppError from '../utils/AppError.js';
 
 /**
@@ -53,7 +54,22 @@ export const getUserConversations = async (userId) => {
     .populate('participants', 'username email profileImage lastSeen')
     .sort({ updatedAt: -1 });
 
-  return conversations;
+  // Calculate unread count for each conversation based on message sender and seen status
+  const conversationsWithUnread = await Promise.all(
+    conversations.map(async (conv) => {
+      const unreadCount = await Message.countDocuments({
+        conversationId: conv._id,
+        senderId: { $ne: userId },
+        status: { $ne: 'seen' },
+      });
+      return {
+        ...conv.toObject(),
+        unreadCount,
+      };
+    })
+  );
+
+  return conversationsWithUnread;
 };
 
 /**

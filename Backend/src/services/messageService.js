@@ -19,6 +19,7 @@ export const sendMessage = async (encryptedBlob, conversationId, userId) => {
   const message = await Message.create({
     encryptedBlob,
     conversationId,
+    senderId: userId,
   });
 
   // Update the conversation's last message pointer

@@ -60,7 +60,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-surface antialiased flex flex-col justify-center items-center px-4 py-12 selection:bg-primary/30 selection:text-primary relative grid-bg">
+    <div className="min-h-dvh bg-background text-on-surface antialiased flex flex-col justify-center items-center px-4 py-12 selection:bg-primary/30 selection:text-primary relative grid-bg">
       {/* WebGL FaultyTerminal Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <FaultyTerminal

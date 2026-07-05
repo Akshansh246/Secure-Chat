@@ -1,5 +1,6 @@
 import socketAuth from './socketAuth.js';
 import User from '../models/User.js';
+import Message from '../models/Message.js';
 
 // Track online users: userId → Set<socketId>
 // Supports multiple connections per user (e.g., phone + desktop)
@@ -62,10 +63,20 @@ const initializeSocket = (io) => {
 
     // --- Delivery Status ---
 
-    socket.on('message:delivered', (data) => {
+    socket.on('message:delivered', async (data) => {
       const { messageId, senderId } = data;
-      const senderSockets = getRecipientSocketIds(senderId);
 
+      try {
+        // Mark message as delivered only if it is not already seen
+        await Message.updateOne(
+          { _id: messageId, status: { $ne: 'seen' } },
+          { status: 'delivered' }
+        );
+      } catch (err) {
+        console.error('Failed to update message status to delivered in DB:', err);
+      }
+
+      const senderSockets = getRecipientSocketIds(senderId);
       for (const socketId of senderSockets) {
         io.to(socketId).emit('message:delivered', {
           messageId,
@@ -76,10 +87,20 @@ const initializeSocket = (io) => {
 
     // --- Seen Status ---
 
-    socket.on('message:seen', (data) => {
+    socket.on('message:seen', async (data) => {
       const { messageIds, senderId, conversationId } = data;
-      const senderSockets = getRecipientSocketIds(senderId);
 
+      try {
+        // Bulk update messages in the list to seen status
+        await Message.updateMany(
+          { _id: { $in: messageIds } },
+          { status: 'seen' }
+        );
+      } catch (err) {
+        console.error('Failed to update message status to seen in DB:', err);
+      }
+
+      const senderSockets = getRecipientSocketIds(senderId);
       for (const socketId of senderSockets) {
         io.to(socketId).emit('message:seen', {
           messageIds,

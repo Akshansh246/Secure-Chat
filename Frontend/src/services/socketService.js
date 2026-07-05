@@ -99,11 +99,17 @@ export const initializeSocket = (accessToken) => {
       // 1. Decrypt incoming message
       const decryptedMsg = await decryptIncomingMessage(conversation, payload);
 
+      // Ensure the message has a proper _id field mapped from the socket payload
+      const msgWithId = {
+        ...decryptedMsg,
+        _id: decryptedMsg._id || payload.messageId || decryptedMsg.messageId,
+      };
+
       // 2. Dispatch to Redux
       store.dispatch(
         addMessage({
           conversationId: payload.conversationId,
-          message: decryptedMsg,
+          message: msgWithId,
         })
       );
 

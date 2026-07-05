@@ -250,11 +250,18 @@ export default function FaultyTerminal({
   const frozenTimeRef = useRef(0);
   const rafRef = useRef(0);
   const loadAnimationStartRef = useRef(0);
-  const timeOffsetRef = useRef(Math.random() * 100);
+  const timeOffsetRef = useRef(0);
 
   const tintVec = useMemo(() => hexToRgb(tint), [tint]);
 
   const ditherValue = useMemo(() => (typeof dither === 'boolean' ? (dither ? 1 : 0) : dither), [dither]);
+
+  // Extract primitive values to avoid recreating WebGL context on every render
+  const gridMulX = gridMul[0];
+  const gridMulY = gridMul[1];
+  const tintR = tintVec[0];
+  const tintG = tintVec[1];
+  const tintB = tintVec[2];
 
   const handleMouseMove = useCallback(e => {
     const ctn = containerRef.current;
@@ -266,6 +273,9 @@ export default function FaultyTerminal({
   }, []);
 
   useEffect(() => {
+    if (timeOffsetRef.current === 0) {
+      timeOffsetRef.current = Math.random() * 100;
+    }
     const ctn = containerRef.current;
     if (!ctn) return;
 
@@ -286,7 +296,7 @@ export default function FaultyTerminal({
         },
         uScale: { value: scale },
 
-        uGridMul: { value: new Float32Array(gridMul) },
+        uGridMul: { value: new Float32Array([gridMulX, gridMulY]) },
         uDigitSize: { value: digitSize },
         uScanlineIntensity: { value: scanlineIntensity },
         uGlitchAmount: { value: glitchAmount },
@@ -295,7 +305,7 @@ export default function FaultyTerminal({
         uChromaticAberration: { value: chromaticAberration },
         uDither: { value: ditherValue },
         uCurvature: { value: curvature },
-        uTint: { value: new Color(tintVec[0], tintVec[1], tintVec[2]) },
+        uTint: { value: new Color(tintR, tintG, tintB) },
         uMouse: {
           value: new Float32Array([smoothMouseRef.current.x, smoothMouseRef.current.y])
         },
@@ -379,7 +389,8 @@ export default function FaultyTerminal({
     pause,
     timeScale,
     scale,
-    gridMul,
+    gridMulX,
+    gridMulY,
     digitSize,
     scanlineIntensity,
     glitchAmount,
@@ -388,7 +399,9 @@ export default function FaultyTerminal({
     chromaticAberration,
     ditherValue,
     curvature,
-    tintVec,
+    tintR,
+    tintG,
+    tintB,
     mouseReact,
     mouseStrength,
     pageLoadAnimation,

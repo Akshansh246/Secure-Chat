@@ -13,6 +13,17 @@ const messageSchema = new mongoose.Schema(
       required: [true, 'Conversation ID is required'],
       index: true,
     },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ['sent', 'delivered', 'seen'],
+      default: 'sent',
+      index: true,
+    },
   },
   {
     timestamps: true,
